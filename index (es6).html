@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>Document</title>
+    <style>
+        ul li {
+            cursor: default;
+            user-select: none;
+        }
+        .selected {
+            background-color: #FF9700;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+
+    </div>
+    <script>
+        'use strict';
+        class List {
+            constructor(items, conatainer) {
+                this.container = container;
+                this.items = items;
+            }
+
+            addListItem(item) {
+                let li = document.createElement('li');
+                li.innerHTML = item;
+                this.list.appendChild(li);
+            }
+
+            makeControlPanel() {
+                this.controlPanel = {
+                    field: document.createElement('input'),
+                    addButton: document.createElement('input')
+                }
+                this.controlPanel.addButton.setAttribute('type', 'submit');
+                this.controlPanel.addButton.setAttribute('value', 'add');
+                this.controlPanel.addButton.addEventListener('click', (e) => {
+                    let item = this.controlPanel.field.value;
+                    if (item) this.addListItem(item);
+                    e.preventDefault();
+                });
+            }
+
+            makeList(arr) {
+                this.list = document.createElement('ul');
+                arr.forEach((elem) => {
+                    this.addListItem(elem);
+                });
+                this.lastSelected = null;
+                this.list.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'LI') {
+                        let target = e.target;
+                        if (e.shiftKey) {
+                            this.clearSelected();
+                            if (this.lastSelected) {
+                                let itemsArr = [].slice.call(this.list.children);
+                                let indexLastSel = itemsArr.indexOf(this.lastSelected);
+                                let indexTarget = itemsArr.indexOf(target);
+                                indexLastSel - indexTarget > 0 ?
+                                        this.selectItems(itemsArr[indexTarget], itemsArr[indexLastSel]) :
+                                        this.selectItems(itemsArr[indexLastSel], itemsArr[indexTarget])
+                            } else {
+                                this.lastSelected = target;
+                                target.classList.add('selected');
+                            }
+                        } else if (e.ctrlKey) {
+                            target.classList.contains('selected') ?
+                                    this.lastSelected = null :
+                                    this.lastSelected = target;
+                            target.classList.toggle('selected');
+                        } else {
+                            this.clearSelected();
+                            target.classList.add('selected');
+                            this.lastSelected = target;
+                        }
+                    }
+                });
+            }
+
+            clearSelected() {
+                let selected = this.list.querySelectorAll('.selected') || [];
+                for (let i = 0; i < selected.length; i++) {
+                    selected[i].classList.remove('selected');
+                }
+            }
+
+            selectItems(from, to) {
+                let current = from;
+                let last = to.nextElementSibling;
+                while (current !== last) {
+                    current.classList.add('selected');
+                    current = current.nextElementSibling;
+                }
+            }
+
+            display() {
+                this.makeControlPanel();
+                this.makeList(this.items);
+                this.container.append(
+                        this.controlPanel.field,
+                        this.controlPanel.addButton,
+                        this.list);
+            }
+        }
+
+
+        function createItemsArr(num) {
+            let arr = [];
+            for (let i = 0; i < num; i++) {
+               arr.push('element -' + i);
+            }
+            return arr;
+        }
+        let items = createItemsArr(15);
+        let list = new List(items, document.body.children[0]);
+        let list1 = new List(items, document.body.children[0]);
+        list.display();
+        list1.display();
+    </script>
+</body>
+</html>

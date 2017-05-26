@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>Document</title>
+    <style>
+
+    </style>
+</head>
+<body>
+    <div id="container">
+
+    </div>
+    <div class="container">
+
+    </div>
+    <script>
+        'use strict';
+        function List(arr, container) {
+            this.container = container;
+            this.form = createElement('form');
+            this.ul = createElement('ul');
+            let submit = createElement('input','type','submit');
+            let textField = createElement('input', 'type', 'text');
+            let that = this;
+            submit.setAttribute('value', 'add');
+            this.form.appendChild(textField);
+            this.form.appendChild(submit);
+            arr.forEach(function (elem) {
+               let li = createElement('li');
+               li.innerHTML = elem;
+               that.ul.appendChild(li);
+            });
+            submit.addEventListener('click', addItem);
+            function addItem (e) {
+                let target = e.target;
+                if (textField.value) {
+                    let li = createElement('li');
+                    li.innerHTML = textField.value;
+                    that.ul.appendChild(li);
+                }
+                e.preventDefault();
+            }
+            function createElement(elem, attr, value) {
+                let el = document.createElement(elem);
+                switch (arguments.length) {
+                    case 2:
+                        el.setAttribute(attr);
+                        break;
+                    case 3:
+                        el.setAttribute(attr, value);
+                }
+                return el;
+            }
+
+        }
+        List.prototype.initialize = function() {
+            this.container.appendChild(this.form);
+            this.container.appendChild(this.ul);
+        }
+
+        let items = ['item-1', 'item-2', 'item-3', 'item-4', 'item-5'];
+        let list = new List(items, document.body.children[0]);
+        list.initialize();
+        let list1 = new List(items, document.body.children[1]);
+        list1.initialize();
+    </script>
+</body>
+</html>
