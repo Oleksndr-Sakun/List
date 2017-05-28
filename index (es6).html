@@ -6,13 +6,32 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <title>Document</title>
     <style>
+    	ul {
+    		border-bottom: 1px solid rgb(200,200,200);
+    	}
         ul li {
             cursor: default;
             user-select: none;
+            list-style-type: none;
         }
         .selected {
             background-color: #FF9700;
         }
+        input {
+			padding: 5px 10px;
+			border-radius: 5px;
+			border-style: solid;
+			border-width: 1px;
+			margin-right: 5px;
+        }
+        input:focus {
+        	outline: none;
+        	box-shadow: 0 0 3px rgb(30,30,30) inset;
+        }
+        input[type="text"] {
+			margin-right: 10px;
+        }
+        
     </style>
 </head>
 <body>
@@ -20,233 +39,151 @@
 
     </div>
     <script>
-
-           // initialize:
-        // init() is called first,
-        // creates and adds to container ul element
-        // calls addController
-        // and triger click on add button
-                 // model
-           //init() calls method createModel and saves it in let model
-           //createModel method taks this.itesm param and returns it
-           //data stores in model object
-    // for every instance creates own model, and all instances share methods
            'use strict';
-        let List = (function() {
-            let model = {}
-            let id = 0;
-            function createModel() {
-                this.id = id++;
-                model[this.id] = this.items;
-            }
+            let create = document.createElement.bind(document);
             class List {
                 constructor(items, conatainer) {
                     this.container = container;
-                    this.items = items;
-                    createModel();
+                    this.createModel(items);
                 }
+                createModel(data) {
+                	this.model = [];
+                	data.forEach(elem => {
+                		this.model.push(elem)
+                	});
+                }
+                // model methods
                 getData() {
-                    return model[this.id];
+                    return this.model;
                 }
                 addData(data) {
-                    model[this.id].push(data);
+                	if (data) {
+                		this.model.push(data);
+                		return true;
+                	} else return false;
+                }
+                removeData() {
+                	let arr = this.model;
+                	this.selected.forEach(elem => {
+                		console.log(elem);
+                		this.model.splice(elem, 1);
+                	})
+                }
+                selectData(elem) {
+                	this.selected.push(elem);
+                }
+                cancelSelection(elem) {
+                	this.selected.splice(this.selected.indexOf(elem), 1);
+                }
+                cancelSelectiontAll() {
+                	this.selected = [];
+                }
+                // controller
+                actionHandler(e) {
+                	e.preventDefault();
+                	if (e.target.tagName === 'LI') {
+                		let listArr = [].slice.call(this.ul.children);
+                		let targetIndex = listArr.indexOf(e.target);
+                        if (e.shiftKey) {
+                        	this.parseShiftClick(targetIndex);
+		                } else if (e.ctrlKey) {
+		                    this.parseCtrlClick(targetIndex);
+		                } else {
+		                    this.parseClick(targetIndex);
+		                }
+	                	this.mark(this.selected); 
+		        	} else if (e.target === this.buttonAdd) {
+	                	let result = this.addData(this.textBox.value);
+	                	if (result) {
+	                		this.render(this.model);
+	                	}
+	                } else if (e.target.getAttribute('value') === 'remove') {
+	                	this.removeData();
+	                	this.render(this.model);
+	                	this.selected = [];
+	                	this.lastSelected = null;
+                	}
+                }
+                parseClick(clicked) {
+                	this.cancelSelectiontAll();
+                	this.selectData(clicked);
+                	this.lastSelected = clicked;
+                }
+                parseCtrlClick(clicked) {
+                	let isSelected = this.selected.some(elem => {return elem === clicked}); 
+                	if (isSelected) {
+                		this.cancelSelection(clicked);
+                		this.lastSelected = null;
+                	} else {
+                		this.selectData(clicked);
+                		this.lastSelected = clicked;
+                	}
+                }
+                parseShiftClick(clicked) {
+                	this.cancelSelectiontAll();
+                	if (this.lastSelected !== null) {
+                		let min = Math.min(this.lastSelected, clicked);
+                		let max = Math.max(this.lastSelected, clicked);
+                		for (let i = min; i <= max; i++) {
+                			this.selectData(i);
+                		}
+                	} else {
+                		this.lastSelected = clicked;
+                		this.selectData(clicked);
+                	}
+                }
+                // view methods
+                mark(indexes) {
+                	let selected = this.ul.querySelectorAll('.selected');
+                	selected.forEach((item) => {
+                		item.classList.remove('selected');
+                	});
+                	indexes.forEach((index) => {
+                		let li = this.ul.querySelector('li:nth-child(' + (index + 1)  + ')');
+                		li.classList.add('selected');
+                	});
+                }
+                render(model) {
+                	let string = '';
+                	model.forEach((elem) => {
+                		string += '<li>' + elem + '</li>';
+                	});
+                	this.ul.innerHTML = string;
                 }
                 init() {
-                    createModel();
+                   this.ul = create('ul');
+                   this.form = create('form');
+                   this.textBox = create('input');
+                   this.textBox.setAttribute('type', 'text');
+                   this.buttonAdd = create('input');
+                   this.buttonAdd.setAttribute('type', 'submit');
+                   this.buttonAdd.setAttribute('value', 'add');
+                   this.buttonRemove = create('input');
+                   this.buttonRemove.setAttribute('type', 'button');
+                   this.buttonRemove.setAttribute('value', 'remove');
+                   this.render(this.model);
+                   this.form.append(this.textBox, this.buttonAdd, this.buttonRemove);
+                   this.container.append(this.form, this.ul);
+                   this.ul.onclick = this.actionHandler.bind(this);
+                   this.form.onclick = this.actionHandler.bind(this);
+                   this.lastSelected = null;
+                   this.selected = [];
                 }
             }
-
-            return List;
-        })();
-
-       let items = createItemsArr(5);
-       let list = new List(items, document.body.children[0]);
-       let list1 = new List(items, document.body.children[0]);
-       list.init();
-       console.log(list.getData());
-       console.log(list1.getData());
-
-
-
-            /*generateId
-            addData(data) {
-                if (data) {
-                    this.model.push(data);
-                }
-            }
-            getData() {
-                return this.model;
-            }
-            selectData() {
-
-            }
-           createElement(elem, options, val) {
-                let tag = document.createElement(elem);
-                for (let key in options) {
-                    if (options.hasOwnProperty(key)) {
-                        tag.setAttribute(key, options[key]);
-                    }
-                }
-                tag.innerHTML = val;
-            }
-            renderElement(elem, container) {
-                let li = document.createElement('li');
-                li.innerHTML = val;
-            }
-            addController() {
-                // hang handlers for user events on buttons, lists
-                // handlers, calls model methods, depending on changes user made
-                // methods returns alerts about they have changed model to obj;
-                // method checkChenges checks obj prop states, if its changed alerts about it of listener, who is
-                // view method, and changed property state back;
-                buttonAdd.addEventListener('click', (e) => {
-                    if (this.addData(textBox.value) {
-                        this.render(this.model)
-                    }
-                });
-                ul.addEventListener('click', (e) => {
-                    if (e.target.tagName === 'LI') {
-                        let target = e.target;
-                        if (e.shiftKey) {
-                            this.clearSelected();
-                            if (this.lastSelected) {
-                                let itemsArr = [].slice.call(this.list.children);
-                                let indexLastSel = itemsArr.indexOf(this.lastSelected);
-                                let indexTarget = itemsArr.indexOf(target);
-                                indexLastSel - indexTarget > 0 ?
-                                    this.selectItems(itemsArr[indexTarget], itemsArr[indexLastSel]) :
-                                    this.selectItems(itemsArr[indexLastSel], itemsArr[indexTarget])
-                            } else {
-                                this.lastSelected = target;
-                                target.classList.add('selected');
-                            }
-                        } else if (e.ctrlKey) {
-                            target.classList.contains('selected') ?
-                                this.lastSelected = null :
-                                this.lastSelected = target;
-                            target.classList.toggle('selected');
-                        } else {
-                            this.clearSelected();
-                            target.classList.add('selected');
-                            this.lastSelected = target;
-                        }
-                    }
-                });
-            }
-            render(model) {
-                model.forEach((elem) => {
-                    let li = document.createElement('li')
-                });
-            }
-            init() {
-                let create = document.createElement;
-                let textBox = create('input');
-                let buttonAdd = create('input');
-                let ul = create('ul');
-                buttonAdd.setAttribute('type', 'submit');
-                buttonAdd.setAttribute('value', 'add');
-                this.addController();
-            }
-
-
-
-
-
-
-
-
-
-            addListItem(item) {
-                let li = document.createElement('li');
-                li.innerHTML = item;
-                this.list.appendChild(li);
-            }
-
-            makeControlPanel() {
-                this.controlPanel = {
-                    field: document.createElement('input'),
-                    addButton: document.createElement('input')
-                }
-                this.controlPanel.addButton.setAttribute('type', 'submit');
-                this.controlPanel.addButton.setAttribute('value', 'add');
-                this.controlPanel.addButton.addEventListener('click', (e) => {
-                    let item = this.controlPanel.field.value;
-                    if (item) this.addListItem(item);
-                    e.preventDefault();
-                });
-            }
-
-            makeList(arr) {
-                this.list = document.createElement('ul');
-                arr.forEach((elem) => {
-                    this.addListItem(elem);
-                });
-                this.lastSelected = null;
-                this.list.addEventListener('click', (e) => {
-                    if (e.target.tagName === 'LI') {
-                        let target = e.target;
-                        if (e.shiftKey) {
-                            this.clearSelected();
-                            if (this.lastSelected) {
-                                let itemsArr = [].slice.call(this.list.children);
-                                let indexLastSel = itemsArr.indexOf(this.lastSelected);
-                                let indexTarget = itemsArr.indexOf(target);
-                                indexLastSel - indexTarget > 0 ?
-                                        this.selectItems(itemsArr[indexTarget], itemsArr[indexLastSel]) :
-                                        this.selectItems(itemsArr[indexLastSel], itemsArr[indexTarget])
-                            } else {
-                                this.lastSelected = target;
-                                target.classList.add('selected');
-                            }
-                        } else if (e.ctrlKey) {
-                            target.classList.contains('selected') ?
-                                    this.lastSelected = null :
-                                    this.lastSelected = target;
-                            target.classList.toggle('selected');
-                        } else {
-                            this.clearSelected();
-                            target.classList.add('selected');
-                            this.lastSelected = target;
-                        }
-                    }
-                });
-            }
-
-            clearSelected() {
-                let selected = this.list.querySelectorAll('.selected') || [];
-                for (let i = 0; i < selected.length; i++) {
-                    selected[i].classList.remove('selected');
-                }
-            }
-
-            selectItems(from, to) {
-                let current = from;
-                let last = to.nextElementSibling;
-                while (current !== last) {
-                    current.classList.add('selected');
-                    current = current.nextElementSibling;
-                }
-            }
-
-            display() {
-                this.makeControlPanel();
-                this.makeList(this.items);
-                this.container.append(
-                        this.controlPanel.field,
-                        this.controlPanel.addButton,
-                        this.list);
-            }
-        }*/
-
 
         function createItemsArr(num) {
             let arr = [];
             for (let i = 0; i < num; i++) {
-               arr.push('element -' + i);
+               arr.push('element - ' + i);
             }
             return arr;
         }
-
+            
+        let items = createItemsArr(15);
+        let list = new List(items, document.body.children[0]);
+        let list1 = new List(items, document.body.children[0]);
+        list.init();
+        list1.init();
 
     </script>
 </body>
