@@ -57,7 +57,6 @@
                     return this.model;
                 }
                 validateData(data) {
-                    console.log(data);
                     return data ? true : false;
                 }
                 addData(data) {
@@ -81,6 +80,7 @@
                 	if (e.target.tagName === 'LI') {
                 		let listArr = [].slice.call(this.ul.children);
                 		let targetIndex = listArr.indexOf(e.target);
+                		this.cancelMarking(listArr);
                         if (e.shiftKey) {
                         	this.parseShiftClick(targetIndex);
 		                } else if (e.ctrlKey) {
@@ -90,7 +90,7 @@
 		                }
 	                	this.mark(this.selected); 
 		        	} else if (e.target === this.buttonAdd) {
-                	    if (this.validateData()) {
+                	    if (this.validateData(this.textBox.value)) {
                             this.addData(this.textBox.value);
                             this.render(this.model);
                         }
@@ -133,14 +133,30 @@
                 }
                 // view methods
                 mark(indexes) {
-                	let selected = this.ul.querySelectorAll('.selected');
-                	selected.forEach((item) => {
-                		item.classList.remove('selected');
-                	});
                 	indexes.forEach((index) => {
                 		let li = this.ul.querySelector('li:nth-child(' + (index + 1)  + ')');
                 		li.classList.add('selected');
                 	});
+                }
+                cancelMarking(marked) {
+                    marked.forEach(elem => {
+                        elem.classList.remove('selected');
+                    })
+                }
+                preRender() {
+                    this.ul = create('ul');
+                    this.form = create('form');
+                    this.textBox = create('input');
+                    this.textBox.setAttribute('type', 'text');
+                    this.buttonAdd = create('input');
+                    this.buttonAdd.setAttribute('type', 'submit');
+                    this.buttonAdd.setAttribute('value', 'add');
+                    this.buttonRemove = create('input');
+                    this.buttonRemove.setAttribute('type', 'button');
+                    this.buttonRemove.setAttribute('value', 'remove');
+                    this.ul.onclick = this.actionHandler.bind(this);
+                    this.form.onclick = this.actionHandler.bind(this);
+                    this.form.append(this.textBox, this.buttonAdd, this.buttonRemove);
                 }
                 render(model) {
                 	let string = '';
@@ -150,23 +166,11 @@
                 	this.ul.innerHTML = string;
                 }
                 init() {
-                   this.ul = create('ul');
-                   this.form = create('form');
-                   this.textBox = create('input');
-                   this.textBox.setAttribute('type', 'text');
-                   this.buttonAdd = create('input');
-                   this.buttonAdd.setAttribute('type', 'submit');
-                   this.buttonAdd.setAttribute('value', 'add');
-                   this.buttonRemove = create('input');
-                   this.buttonRemove.setAttribute('type', 'button');
-                   this.buttonRemove.setAttribute('value', 'remove');
-                   this.render(this.model);
-                   this.form.append(this.textBox, this.buttonAdd, this.buttonRemove);
-                   this.container.append(this.form, this.ul);
-                   this.ul.onclick = this.actionHandler.bind(this);
-                   this.form.onclick = this.actionHandler.bind(this);
-                   this.lastSelected = null;
-                   this.selected = [];
+                    this.preRender();
+                    this.render(this.model);
+                    this.container.append(this.form, this.ul);
+                    this.lastSelected = null;
+                    this.selected = [];
                 }
             }
 
