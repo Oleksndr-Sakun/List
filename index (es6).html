@@ -39,140 +39,145 @@
 
     </div>
     <script>
-        // model elements should be objects with options which names are some data description.
-        // render must knows how to draw all data
-        // every  method must be for one action
-           'use strict';
-            let create = document.createElement.bind(document);
-            class List {
-                constructor(items, conatainer) {
-                    this.container = container;
-                    this.createModel(items);
+       'use strict';
+        let create = document.createElement.bind(document);
+        class List {
+            constructor(items, conatainer) {
+                this.container = container;
+                this.createModel(items);
+            }
+
+            // model
+            createModel(data) {
+               this.model = data.map(elem => {
+                  return this.createItem(elem);
+               });
+            }
+            getData() {
+                return this.model;
+            }
+            validateData(data) {
+                return data ? true : false;
+            }
+            createItem(item) {
+                return {
+                         title: item,
+                         isSelected: false,
+                         visible: true
+                       }
+            }
+            addItem(item) {
+                this.model.push(item);
+            }
+            removeData() {
+                this.model = this.model.filter((a, i) => !this.selected.includes(i));
+            }
+            selectData(item) {
+                item.isSelected = true;
+            }
+            cancelLastSelected() {
+               this.model.find(elem => {return elem.isLastSelected;})
+                   .isLastSelected = false;
+            }
+            cancelSelectionAll() {
+                this.model.forEach(elem => {
+                    if (elem.isSelected) elem.isSelected = false;
+                });
+            }
+
+            // controller
+
+            // devide action handler, for handlers using bind via () => {}
+            actionHandler(e)  {
+                e.preventDefault();
+                if (e.target.tagName === 'LI') {
+                    let listArr = [].slice.call(this.ul.children);
+                    let targetIndex = listArr.indexOf(e.target);
+                    if (e.shiftKey) {
+                        this.parseShiftClick(this.model[targetIndex]);
+                    } else if (e.ctrlKey) {
+                        this.parseCtrlClick(this.model[targetIndex]);
+                    } else {
+                        this.parseClick(this.model[targetIndex]);
+                    }
+                } else if (e.target === this.buttonAdd) {
+                    if (this.validateData(this.textBox.value)) {
+                        this.addData(this.textBox.value);
+                    }
+                } else if (e.target === this.buttonRemove) {
+                    if (this.model.some(elem => {return elem.isLastSelected;})) {
+                        this.model = this.model.filter(elem => {
+                             return !elem.isSelected;
+                        });
+                    }
                 }
-                createModel(data) {
-                	this.model = [...data];
-                }
-                // model methods
-                getData() {
-                    return this.model;
-                }
-                validateData(data) {
-                    return data ? true : false;
-                }
-                addData(data) {
-                    this.model.push(data);
-                }
-                removeData() {
-                	this.model = this.model.filter((a, i) => !this.selected.includes(i));
-                }
-                selectData(index) {
-                	this.selected.push(index);
-                }
-                cancelSelection(index) {
-                	this.selected.splice(this.selected.indexOf(index), 1);
-                }
-                cancelSelectiontAll() {
-                	this.selected = [];
-                }
-                // controller
-                actionHandler(e) {
-                	e.preventDefault();
-                	if (e.target.tagName === 'LI') {
-                		let listArr = [].slice.call(this.ul.children);
-                		let targetIndex = listArr.indexOf(e.target);
-                		this.cancelMarking(listArr);
-                        if (e.shiftKey) {
-                        	this.parseShiftClick(targetIndex);
-		                } else if (e.ctrlKey) {
-		                    this.parseCtrlClick(targetIndex);
-		                } else {
-		                    this.parseClick(targetIndex);
-		                }
-	                	this.mark(this.selected); 
-		        	} else if (e.target === this.buttonAdd) {
-                	    if (this.validateData(this.textBox.value)) {
-                            this.addData(this.textBox.value);
-                            this.render(this.model);
-                        }
-                    } else if (e.target === this.buttonRemove) {
-                	    if (this.selected.length) {
-                            this.removeData();
-                            this.render(this.model);
-                            this.selected = [];
-                            this.lastSelected = null;
-                        }
-                	}
-                }
-                parseClick(clicked) {
-                	this.cancelSelectiontAll();
-                	this.selectData(clicked);
-                	this.lastSelected = clicked;
-                }
-                parseCtrlClick(clicked) {
-                	let isSelected = this.selected.some(elem => {return elem === clicked}); 
-                	if (isSelected) {
-                		this.cancelSelection(clicked);
-                		this.lastSelected = null;
-                	} else {
-                		this.selectData(clicked);
-                		this.lastSelected = clicked;
-                	}
-                }
-                parseShiftClick(clicked) {
-                	this.cancelSelectiontAll();
-                	if (this.lastSelected !== null) {
-                		let min = Math.min(this.lastSelected, clicked);
-                		let max = Math.max(this.lastSelected, clicked);
-                		for (let i = min; i <= max; i++) {
-                			this.selectData(i);
-                		}
-                	} else {
-                		this.lastSelected = clicked;
-                		this.selectData(clicked);
-                	}
-                }
-                // view methods
-                mark(indexes) {
-                	indexes.forEach((index) => {
-                		let li = this.ul.querySelector('li:nth-child(' + (index + 1)  + ')');
-                		li.classList.add('selected');
-                	});
-                }
-                cancelMarking(marked) {
-                    marked.forEach(elem => {
-                        elem.classList.remove('selected');
-                    })
-                }
-                preRender() {
-                    this.ul = create('ul');
-                    this.form = create('form');
-                    this.textBox = create('input');
-                    this.textBox.setAttribute('type', 'text');
-                    this.buttonAdd = create('input');
-                    this.buttonAdd.setAttribute('type', 'submit');
-                    this.buttonAdd.setAttribute('value', 'add');
-                    this.buttonRemove = create('input');
-                    this.buttonRemove.setAttribute('type', 'button');
-                    this.buttonRemove.setAttribute('value', 'remove');
-                    this.ul.onclick = this.actionHandler.bind(this);
-                    this.form.onclick = this.actionHandler.bind(this);
-                    this.form.append(this.textBox, this.buttonAdd, this.buttonRemove);
-                }
-                render(model) {
-                	let string = '';
-                	model.forEach((elem) => {
-                		string += '<li>' + elem + '</li>';
-                	});
-                	this.ul.innerHTML = string;
-                }
-                init() {
-                    this.preRender();
-                    this.render(this.model);
-                    this.container.append(this.form, this.ul);
-                    this.lastSelected = null;
-                    this.selected = [];
+                this.render(this.model);
+            }
+            parseClick(item) {
+                this.cancelSelectionAll();
+                this.selectData(item);
+                item.isLastSelected = true;
+            }
+            parseCtrlClick(item) {
+                if (item.isSelected) {
+                    item.isSelected = false;
+                    this.cancelLastSelected();
+                } else {
+                    item.isSelected = true;
+                    item.isLastSelected = true;
                 }
             }
+            parseShiftClick(item) {
+                let last = this.model.findIndex(elem => {return elem.isLastSelected;});
+                this.cancelSelectionAll();
+                if (last !== -1) {
+                    let min = Math.min(last, this.model.indexOf(item));
+                    let max = Math.max(last, this.model.indexOf(item));
+                    for (let i = min; i <= max; i++) {
+                        this.model[i].isSelected = true;
+                    }
+                } else {
+                    item.isLastSelected = true;
+                    item.isSelected = true;
+                }
+            }
+
+            // view
+            preRender() {
+                this.ul = create('ul');
+                this.form = create('form');
+                this.textBox = create('input');
+                this.textBox.setAttribute('type', 'text');
+                this.buttonAdd = create('input');
+                this.buttonAdd.setAttribute('type', 'submit');
+                this.buttonAdd.setAttribute('value', 'add');
+                this.buttonRemove = create('input');
+                this.buttonRemove.setAttribute('type', 'button');
+                this.buttonRemove.setAttribute('value', 'remove');
+                this.ul.onclick = this.actionHandler;
+                this.form.onclick = this.actionHandler;
+                this.form.append(this.textBox, this.buttonAdd, this.buttonRemove);
+                this.container.append(this.form, this.ul);
+            }
+            // for rendering using appendChild
+            render(model) {
+                let string = '';
+                model.filter(elem => {
+                    return elem.visible;
+                }).forEach(elem => {
+                    let li = '<li>';
+                    if (elem.isSelected) li = '<li class = selected>';
+                    string += li + elem.title + '</li>';
+                });
+                this.ul.innerHTML = string;
+            }
+            init() {
+                this.isLastSelected = null;
+                this.preRender();
+                this.render(this.model);
+            }
+        }
+
 
         function createItemsArr(num) {
             let arr = [];
