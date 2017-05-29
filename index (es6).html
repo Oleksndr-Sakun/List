@@ -39,6 +39,9 @@
 
     </div>
     <script>
+        // model elements should be objects with options which names are some data description.
+        // render must knows how to draw all data
+        // every  method must be for one action
            'use strict';
             let create = document.createElement.bind(document);
             class List {
@@ -47,33 +50,27 @@
                     this.createModel(items);
                 }
                 createModel(data) {
-                	this.model = [];
-                	data.forEach(elem => {
-                		this.model.push(elem)
-                	});
+                	this.model = [...data];
                 }
                 // model methods
                 getData() {
                     return this.model;
                 }
+                validateData(data) {
+                    console.log(data);
+                    return data ? true : false;
+                }
                 addData(data) {
-                	if (data) {
-                		this.model.push(data);
-                		return true;
-                	} else return false;
+                    this.model.push(data);
                 }
                 removeData() {
-                	let arr = this.model;
-                	this.selected.forEach(elem => {
-                		console.log(elem);
-                		this.model.splice(elem, 1);
-                	})
+                	this.model = this.model.filter((a, i) => !this.selected.includes(i));
                 }
-                selectData(elem) {
-                	this.selected.push(elem);
+                selectData(index) {
+                	this.selected.push(index);
                 }
-                cancelSelection(elem) {
-                	this.selected.splice(this.selected.indexOf(elem), 1);
+                cancelSelection(index) {
+                	this.selected.splice(this.selected.indexOf(index), 1);
                 }
                 cancelSelectiontAll() {
                 	this.selected = [];
@@ -93,15 +90,17 @@
 		                }
 	                	this.mark(this.selected); 
 		        	} else if (e.target === this.buttonAdd) {
-	                	let result = this.addData(this.textBox.value);
-	                	if (result) {
-	                		this.render(this.model);
-	                	}
-	                } else if (e.target.getAttribute('value') === 'remove') {
-	                	this.removeData();
-	                	this.render(this.model);
-	                	this.selected = [];
-	                	this.lastSelected = null;
+                	    if (this.validateData()) {
+                            this.addData(this.textBox.value);
+                            this.render(this.model);
+                        }
+                    } else if (e.target === this.buttonRemove) {
+                	    if (this.selected.length) {
+                            this.removeData();
+                            this.render(this.model);
+                            this.selected = [];
+                            this.lastSelected = null;
+                        }
                 	}
                 }
                 parseClick(clicked) {
