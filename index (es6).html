@@ -15,7 +15,7 @@
             list-style-type: none;
         }
         .selected {
-            background-color: #FF9700;
+            background-color: #ffd63d;
         }
         input {
 			padding: 5px 10px;
@@ -49,96 +49,88 @@
 
             // model
             createModel(data) {
-               this.model = data.map(elem => {
-                  return this.createItem(elem);
-               });
+               this.model = data.map(elem => this.createItem(elem));
             }
             getData() {
                 return this.model;
             }
             validateData(data) {
-                return data ? true : false;
+                return !!data;
             }
             createItem(item) {
                 return {
                          title: item,
-                         isSelected: false,
-                         visible: true
+                         isSelected: false
                        }
             }
             addItem(item) {
                 this.model.push(item);
             }
             removeData() {
-                this.model = this.model.filter((a, i) => !this.selected.includes(i));
+                const length = this.model.length;
+                this.model = this.model.filter(elem => !elem.isSelected);
+                return length - this.model.length;
             }
-            selectData(item) {
+            selectItem(item) {
                 item.isSelected = true;
             }
-            cancelLastSelected() {
-               this.model.find(elem => {return elem.isLastSelected;})
-                   .isLastSelected = false;
-            }
-            cancelSelectionAll() {
+            cancelSelection() {
                 this.model.forEach(elem => {
                     if (elem.isSelected) elem.isSelected = false;
                 });
             }
 
             // controller
-
-            // devide action handler, for handlers using bind via () => {}
-            actionHandler(e)  {
-                e.preventDefault();
-                if (e.target.tagName === 'LI') {
-                    let listArr = [].slice.call(this.ul.children);
-                    let targetIndex = listArr.indexOf(e.target);
-                    if (e.shiftKey) {
-                        this.parseShiftClick(this.model[targetIndex]);
-                    } else if (e.ctrlKey) {
-                        this.parseCtrlClick(this.model[targetIndex]);
-                    } else {
-                        this.parseClick(this.model[targetIndex]);
-                    }
-                } else if (e.target === this.buttonAdd) {
-                    if (this.validateData(this.textBox.value)) {
-                        this.addData(this.textBox.value);
-                    }
-                } else if (e.target === this.buttonRemove) {
-                    if (this.model.some(elem => {return elem.isLastSelected;})) {
-                        this.model = this.model.filter(elem => {
-                             return !elem.isSelected;
-                        });
-                    }
-                }
-                this.render(this.model);
-            }
-            parseClick(item) {
-                this.cancelSelectionAll();
-                this.selectData(item);
-                item.isLastSelected = true;
-            }
-            parseCtrlClick(item) {
-                if (item.isSelected) {
-                    item.isSelected = false;
-                    this.cancelLastSelected();
+            onSelect(e) {
+                const targetIndex= [].slice.call(this.ul.children).indexOf(e.target);
+                if (e.shiftKey) {
+                    this.parseShiftClick(targetIndex);
+                } else if (e.ctrlKey) {
+                    this.parseCtrlClick(targetIndex);
                 } else {
-                    item.isSelected = true;
-                    item.isLastSelected = true;
+                    this.parseClick(targetIndex);
+                }
+                this.render();
+            }
+            onSubmit(e) {
+              const { value } = this.textBox;
+                if (this.validateData(value)) {
+                    this.addItem(this.createItem(value));
+                    this.textBox.value = '';
+                    this.render();
+                }
+                e.preventDefault();
+            }
+            onRemove() {
+                if (this.removeData() !== 0) {
+                   this.render();
                 }
             }
-            parseShiftClick(item) {
-                let last = this.model.findIndex(elem => {return elem.isLastSelected;});
-                this.cancelSelectionAll();
-                if (last !== -1) {
-                    let min = Math.min(last, this.model.indexOf(item));
-                    let max = Math.max(last, this.model.indexOf(item));
+            parseClick(index) {
+                this.cancelSelection();
+                this.selectItem(this.model[index]);
+                this.prevIndex = index;
+            }
+            parseCtrlClick(index) {
+                if (this.model[index].isSelected) {
+                    this.model[index].isSelected = false;
+                    this.prevIndex = null;
+                } else {
+                    this.selectItem(this.model[index]);
+                    this.prevIndex = index;
+                }
+            }
+            parseShiftClick(index) {
+                this.cancelSelection();
+                if (this.prevIndex !== null) {
+                    let min = Math.min(this.prevIndex, index);
+                    let max = Math.max(this.prevIndex, index);
                     for (let i = min; i <= max; i++) {
                         this.model[i].isSelected = true;
                     }
                 } else {
-                    item.isLastSelected = true;
-                    item.isSelected = true;
+                    this.prevIndex = index;
+                    this.selectItem(this.model[index]);
                 }
             }
 
@@ -154,27 +146,27 @@
                 this.buttonRemove = create('input');
                 this.buttonRemove.setAttribute('type', 'button');
                 this.buttonRemove.setAttribute('value', 'remove');
-                this.ul.onclick = this.actionHandler;
-                this.form.onclick = this.actionHandler;
+                this.buttonAdd.onclick = (e) => this.onSubmit(e);
+                this.buttonRemove.onclick = () => this.onRemove();
+                this.ul.onclick = (e) => this.onSelect(e);
                 this.form.append(this.textBox, this.buttonAdd, this.buttonRemove);
                 this.container.append(this.form, this.ul);
             }
-            // for rendering using appendChild
-            render(model) {
-                let string = '';
-                model.filter(elem => {
-                    return elem.visible;
-                }).forEach(elem => {
-                    let li = '<li>';
-                    if (elem.isSelected) li = '<li class = selected>';
-                    string += li + elem.title + '</li>';
-                });
-                this.ul.innerHTML = string;
+            render() {
+               this.ul.innerHTML = '';
+               this.model.forEach(elem => {
+                   let li = create('li');
+                   li.innerHTML = elem.title;
+                   if (elem.isSelected) li.setAttribute('class', 'selected');
+                   this.ul.appendChild(li);
+               });
             }
+
+            // initialize
             init() {
-                this.isLastSelected = null;
+                this.prevIndex = null;
                 this.preRender();
-                this.render(this.model);
+                this.render();
             }
         }
 
@@ -186,6 +178,9 @@
             }
             return arr;
         }
+
+
+       const items2 = Array(15).fill(1).map((v, idx) => idx);
             
         let items = createItemsArr(15);
         let list = new List(items, document.body.children[0]);
